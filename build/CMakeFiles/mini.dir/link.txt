@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -flto -shared  -o mini.cpython-312-x86_64-linux-gnu.so CMakeFiles/mini.dir/bindings.cpp.o  -Wl,-rpath,/usr/local/lib libmylib.a /usr/local/lib/libfxt.so 
