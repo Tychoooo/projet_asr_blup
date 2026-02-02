@@ -63,13 +63,13 @@ int load_trace(const char *path)
         }
 
         //Printe l'évènement
-        printf("Event_num = " "%zu, time = %llu, code = %lu, nb_params = %u, cpu = %ld, tid = %lu\n",
-               nb_events + 1,
-               (unsigned long long)ev.time,
-               ev.code,
-               ev.nb_params,
-               ev.param[1],
-               ev.user.tid);
+        // printf("Event_num = " "%zu, time = %llu, code = %lu, nb_params = %u, cpu = %ld, tid = %lu\n",
+        //        nb_events + 1,
+        //        (unsigned long long)ev.time,
+        //        ev.code,
+        //        ev.nb_params,
+        //        ev.param[1],
+        //        ev.user.tid);
 
         df_value_t *row = &DATA[nb_events * FIELDS_PER_EVENT];
 
@@ -99,7 +99,7 @@ int load_trace(const char *path)
             if (i < nb)
                 row[7 + i] = (df_value_t)ev.param[i];
             else
-                row[7 + i] = 0;
+                row[7 + i] = -1;
         }
 
         nb_events++;

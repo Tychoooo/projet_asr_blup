@@ -1,7 +1,7 @@
 CMakeFiles/mylib.dir/mylib.c.o: \
- /home/tlecavelierde/Documents/projet_asr/projet_asr_blup/mylib.c \
+ /home/tycho4/projet_ASR/projet_asr_blup/mylib.c \
  /usr/include/stdc-predef.h \
- /home/tlecavelierde/Documents/projet_asr/projet_asr_blup/mylib.h \
+ /home/tycho4/projet_ASR/projet_asr_blup/mylib.h \
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \

@@ -1,4 +1,4 @@
-# Install script for directory: /home/tlecavelierde/Documents/projet_asr/projet_asr_blup
+# Install script for directory: /home/tycho4/projet_ASR/projet_asr_blup
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/tlecavelierde/Documents/projet_asr/projet_asr_blup/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/tycho4/projet_ASR/projet_asr_blup/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

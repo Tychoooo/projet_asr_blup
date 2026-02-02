@@ -87,6 +87,7 @@ def update_details(attr, old, new):
         else:
             text=text+"<b>Duration</b>: "+bp.pretty_duration_pandas(duration)+"<br/></div>"
         text=text+"<b>Depth</b>: "+str(frame["Depth"])+"<br/>"
+        text=text+"<b>Parameters</b>: "+str(frame["Parameters"])+"<br/>"
         text=text+"</li>"
 
     text=text+"</ol>"
@@ -120,12 +121,63 @@ range_tool.overlay.fill_alpha = 0.2
 select.add_tools(range_tool)
 
 
+
+coordonates_div = Div(
+    width=450,
+    text="<div style='padding:6px; border-top:1px solid #ddd;'><b>Duration</b>: —</div>"
+)
+
+
+from bokeh.models import HoverTool
+
+hover_callback = CustomJS(
+    args=dict(
+        source=trace.data_source,
+        selected_indices=selected_indices_div,
+        coordonates_div=coordonates_div
+    ),
+    code="""
+    const i = cb_data.index.indices[0];
+
+    if (i === undefined) {
+        coordonates_div.text =
+          "<div style='padding:6px; border-top:1px solid #ddd;'><b>Duration</b>: —</div>";
+        return;
+    }
+
+    selected_indices.text = i.toString();
+
+    const d = source.data['Duration'][i];
+    coordonates_div.text =
+      "<div style='padding:6px; border-top:1px solid #ddd;'><b>Duration</b>: " + d + "</div>";
+    """
+)
+
+
+
+
+
+
+
+
 ## Tap tool
 # When user clicks a glyph, show the detail in the detail div
 on_tap_callback = CustomJS(args=dict(source=trace.data_source,
-                                     selected_indices=selected_indices_div), code="""
+                                     selected_indices=selected_indices_div,
+                                     coordonates_div_div=coordonates_div),
+                                     code="""
 // Changing selecting_indices will trigger the update_details callback
 selected_indices.text=source.selected.indices.toString();
+
+// afficher coord
+ const inds = source.selected.indices;
+    if (inds.length === 0) {
+        coordonates_div_div.text = "<div style='padding:6px; border-top:1px solid #ddd;'><b>Duration</b>: —</div>";
+    } else {
+        const i = inds[0];
+        const d = source.data['Duration'][i];
+        coordonates_div_div.text = "<div style='padding:6px; border-top:1px solid #ddd;'><b>Duration</b>: " + d + "</div>";
+    }
 """)
 tap = TapTool(callback=on_tap_callback)
 gantt_chart.tools.append(tap)
@@ -183,12 +235,42 @@ multiselect_layout = column(children=[multiselect, button, gantt_flame_button],s
 
 column_plots=column(gantt_chart, select)
 
+import base64
+from pathlib import Path
+
+
+image_path = "./static/thumb_0009.png"
+
+img_file = Path(image_path)
+
+if img_file.exists():
+    b64 = base64.b64encode(img_file.read_bytes()).decode("ascii")
+    
+    image_div = Div(
+    text=f'<img src="data:image/png;base64,{b64}">'
+    )
+
+
+else:
+    image_div = Div(text=f"<b>Image introuvable:</b> {img_file}", width=450)
+
+# image_div = Div(
+#     text=f"""
+#     <div>
+#       <img src="{image_path}" style="max-width: 100%; height: auto; border: 1px solid #ddd;" />
+#     </div>
+#     """,
+#     width=450,
+# )
+
+
+
 
 ############################ General layout
 layout = layout(
     [
         [div, file_input, trace_title],
-        [multiselect_layout, column_plots, details_layout],
+        [multiselect_layout, column_plots, column(details_layout, image_div, coordonates_div, sizing_mode="stretch_height")],
     ],
 )
 

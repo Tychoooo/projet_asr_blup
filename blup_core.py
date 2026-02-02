@@ -249,37 +249,120 @@ def read_trace_fxt(filename):
     import mini
     mini.load_trace(filename)
     a = mini.get_data()
-    # a[i] = [Thread, Function, Start_ns, Finish_ns, Duration_ns, Depth]
+    # a[i] = [event_id, time_ns, code, nb_params, cpu, tid, raw, p0, ..., p15]
     rows = []
     last_time_per_cpu = {}
+    offset_ns =  385472000
+    offset_ns = -1
 
     for row in a:
+        # print(row)
+        # print("row[9]: "+str(row[9]), " row[10]: "+str(row[10]))
         code = int(row[2])
-        if code != 269:
-            continue
 
-        cpu = int(row[4])
-        t_ns = int(row[1])
 
-        # If not first
-        if cpu in last_time_per_cpu:
-            start_ns = last_time_per_cpu[cpu]
-            start_ns = row[7] * 1000
-            finish_ns = t_ns
-            duration_ns = finish_ns - start_ns
+        if code == 269:
+        # TRACE_TILE
+            
+            if offset_ns < 0:
+                    offset_ns = int(row[7])
+                    print("\n\n\nSetting offset_ns to "+str(offset_ns))
+
+            cpu = int(row[4])
+            # print("int(row[7]): "+str(int(row[7]))+" offset_ns: "+str(offset_ns))
+            t_start_ns = int(row[7]) #- offset_ns # p0
+            t_end_ns = int(row[1]) / 1000 #- offset_ns  #  - offset_ns # time_ns
+            # print(t_start_ns, t_end_ns)
+
+
+            duration_ns = t_end_ns - t_start_ns
+
+            # print("TILE on cpu "+str(cpu)+" from "+str(t_start_ns)+" to "+str(t_end_ns)+" duration "+str(duration_ns))
 
             rows.append({
                 "Thread": str(cpu),
-                "Function": "0",
-                "Start": start_ns,
-                "Finish": finish_ns,
-                "Duration": int(duration_ns),
-                "Depth": 0,
+                "Function": "Compute Tile",
+                "Start": t_start_ns, # / 10e6,
+                "Finish": t_end_ns, # / 10e6,
+                "Duration": duration_ns, # / 10e6,
+                "Depth": 1,
+                "Parameters" : "coucou"
             })
+        
+        # les codes semblent inversés entre begin et end, à vérifier
+        elif code == 263:
+        # TRACE_BEGIN_ITER
 
-        last_time_per_cpu[cpu] = t_ns
+            if offset_ns < 0:
+                    offset_ns = int(row[1])
+                    print("\n\n\nSetting offset_ns to "+str(offset_ns))
 
-    df = pd.DataFrame(rows, columns=["Thread", "Function", "Start", "Finish", "Duration", "Depth"])
+            cpu = int(row[4])
+            t_ns = int(row[1]) / 1000#- offset_ns # time_ns
+            last_time_per_cpu[cpu] = t_ns
+            print("BEGIN ITER on cpu "+str(cpu)+" at time "+str(t_ns))
+            # print(row)
+        
+        elif code == 257:
+        # TRACE_END_ITER
+
+            if offset_ns < 0:
+                    offset_ns = int(row[1])
+                    print("\n\n\nSetting offset_ns to "+str(offset_ns))
+
+            cpu = int(row[4])
+            t_end_ns = int(row[1]) / 1000# - offset_ns # time_ns
+            print("END   ITER on cpu "+str(cpu)+" at time "+str(t_end_ns))
+            # print(row)
+            try:
+                t_start_ns = last_time_per_cpu[cpu]
+            except KeyError:
+                print("Warning: missing begin iter for cpu "+str(cpu))
+                continue
+            
+            if t_start_ns == -1:
+                print("Warning: missing begin iter for cpu "+str(cpu))
+                print(-1)
+                continue
+
+            duration_ns = t_end_ns - t_start_ns
+            last_time_per_cpu[cpu] = -1
+
+            rows.append({
+                "Thread": str(cpu),
+                "Function": "Iteration",
+                "Start": t_start_ns, # / 10e6,
+                "Finish": t_end_ns, #  / 10e6,
+                "Duration": duration_ns, # / 10e6,
+                "Depth": 0,
+                "Parameters" : "coucou"
+            })
+            # print(rows[-1])
+
+    df = pd.DataFrame(rows, columns=["Thread", "Function", "Start", "Finish", "Duration", "Depth", "Parameters"])
+
+    offset = min(df["Start"])
+
+    print("Lignes contenant Iteration:")
+    print(df[df["Function"]=="Iteration"])
+
+
+    print("Avant correction \n\n\n")
+    # df["Finish"] = df["Finish"] / 1000
+    print(df.head(5))
+
+
+    df["Start"] = df["Start"] - offset
+    df["Finish"] = df["Finish"] - offset
+
+
+    print("\n\n\nAprès correction \n\n\n")
+    print("Lignes contenant Iteration:")
+    print(df[df["Function"]=="Iteration"])
+
+    print("Offset: "+str(offset))
+    print("Header of loaded fxt trace:\n\n\n\n")
+    df.head(5)
 
 
     # df["Thread"] = df["Thread"].astype("str")
@@ -368,7 +451,9 @@ class BlupTrace:
         g.add_tools(HoverTool(tooltips=[("Function", "@Function"),
                                         ("Start", "@Start"),
                                         ("Stop", "@Finish"),
-                                        ("Duration", "@Duration")]))
+                                        ("Duration", "@Duration"),
+                                        ("Parameters", "@Parameters")
+                                        ]))
         g.hbar(y="Thread", left="Start", right="Finish",
                height=0.5, color="color", legend_field="Function", source=self.data_source)
         g.legend.click_policy="hide"
@@ -394,7 +479,9 @@ class BlupTrace:
         g.add_tools(HoverTool(tooltips=[("Function", "@Function"),
                                         ("Start", "@Start"),
                                         ("Stop", "@Finish"),
-                                        ("Duration", "@Duration")]))
+                                        ("Duration", "@Duration"),
+                                        ("Parameters", "@Parameters")
+                                        ]))
         g.legend.click_policy="hide"
 
         g.on_event(events.RangesUpdate, self.ranges_update_callback)
